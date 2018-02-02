@@ -136,6 +136,7 @@ bool PackedSourcePCK::try_open_pack(const String &p_path) {
 
 	//printf("try open %ls!\n", p_path.c_str());
 
+	uint64_t base = 0;
 	uint32_t magic = f->get_32();
 
 	if (magic != 0x43504447) {
@@ -153,6 +154,7 @@ bool PackedSourcePCK::try_open_pack(const String &p_path) {
 		uint64_t ds = f->get_64();
 		f->seek(f->get_position() - ds - 8);
 
+		base = f->get_position();
 		magic = f->get_32();
 		if (magic != 0x43504447) {
 
@@ -189,7 +191,7 @@ bool PackedSourcePCK::try_open_pack(const String &p_path) {
 		String path;
 		path.parse_utf8(cs.ptr());
 
-		uint64_t ofs = f->get_64();
+		uint64_t ofs = base + f->get_64();
 		uint64_t size = f->get_64();
 		uint8_t md5[16];
 		f->get_buffer(md5, 16);

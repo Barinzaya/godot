@@ -309,6 +309,9 @@ Error ProjectSettings::setup(const String &p_path, const String &p_main_pack, bo
 			if (_load_resource_pack(datapack_name)) {
 				found = true;
 			}
+			else if (_load_resource_pack(exec_path)) {
+				found = true;
+			}
 		}
 
 		// if we opened our package, try and load our project...

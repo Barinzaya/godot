@@ -884,6 +884,7 @@ Error EditorExportPlatform::save_pack(const Ref<EditorExportPreset> &p_preset, c
 
 	memdelete(ftmp);
 
+	f->store_64(f->get_position());
 	f->store_32(0x43504447); //GDPK
 	memdelete(f);
 

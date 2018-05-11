@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="Image" inherits="Resource" category="Core" version="3.0-stable">
+<class name="Image" inherits="Resource" category="Core" version="3.0.2">
 	<brief_description>
 		Image datatype.
 	</brief_description>
@@ -217,7 +217,7 @@
 			<return type="int" enum="Image.Format">
 			</return>
 			<description>
-				Returns the image's raw data.
+				Returns the image’s format. See [code]FORMAT_*[/code] constants.
 			</description>
 		</method>
 		<method name="get_height" qualifiers="const">

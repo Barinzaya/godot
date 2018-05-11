@@ -9,7 +9,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Godot Engine editor\n"
-"PO-Revision-Date: 2018-01-24 02:50+0000\n"
+"PO-Revision-Date: 2018-02-27 02:34+0000\n"
 "Last-Translator: Roger Blanco Ribera <roger.blancoribera@gmail.com>\n"
 "Language-Team: Catalan <https://hosted.weblate.org/projects/godot-engine/"
 "godot/ca/>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8-bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2.19-dev\n"
+"X-Generator: Weblate 2.20-dev\n"
 
 #: editor/animation_editor.cpp
 msgid "Disabled"
@@ -2455,14 +2455,6 @@ msgid "Invalid version.txt format inside templates."
 msgstr "El format de version.txt  dins de les plantilles no és vàlid."
 
 #: editor/export_template_manager.cpp
-msgid ""
-"Invalid version.txt format inside templates. Revision is not a valid "
-"identifier."
-msgstr ""
-"El format de version.txt dins les plantilles no és vàlid. \"Revision\" no és "
-"un indentificador vàlid."
-
-#: editor/export_template_manager.cpp
 msgid "No version.txt found inside templates."
 msgstr "No s'ha trobat cap version.txt dins les plantilles."
 
@@ -2515,10 +2507,6 @@ msgstr "Bucle de redirecció."
 #: editor/plugins/asset_library_editor_plugin.cpp
 msgid "Failed:"
 msgstr "Ha fallat:"
-
-#: editor/export_template_manager.cpp
-msgid "Can't write file."
-msgstr "No es pot escriure el fitxer."
 
 #: editor/export_template_manager.cpp
 msgid "Download Complete."
@@ -3702,15 +3690,15 @@ msgid "Show Grid"
 msgstr "Mostra la graella"
 
 #: editor/plugins/canvas_item_editor_plugin.cpp
-msgid "Show helpers"
+msgid "Show Helpers"
 msgstr "Mostrar els Ajudants"
 
 #: editor/plugins/canvas_item_editor_plugin.cpp
-msgid "Show rulers"
+msgid "Show Rulers"
 msgstr "Mostra els regles"
 
 #: editor/plugins/canvas_item_editor_plugin.cpp
-msgid "Show guides"
+msgid "Show Guides"
 msgstr "Mostra les guies"
 
 #: editor/plugins/canvas_item_editor_plugin.cpp
@@ -3984,7 +3972,7 @@ msgstr "La Malla continguda no és del tipus ArrayMesh."
 
 #: editor/plugins/mesh_instance_editor_plugin.cpp
 msgid "UV Unwrap failed, mesh may not be manifold?"
-msgstr "No s'han pogut desembolcar les UV. Comproveu la topologia de la malla"
+msgstr "No s'han pogut desembolcar les UV. Comproveu la topologia de la malla."
 
 #: editor/plugins/mesh_instance_editor_plugin.cpp
 msgid "No mesh to debug."
@@ -4537,6 +4525,22 @@ msgid "Resource clipboard is empty!"
 msgstr "El porta-retalls de Recursos és buit!"
 
 #: editor/plugins/resource_preloader_editor_plugin.cpp
+#: editor/scene_tree_dock.cpp editor/scene_tree_editor.cpp
+msgid "Open in Editor"
+msgstr "Obre en l'Editor"
+
+#: editor/plugins/resource_preloader_editor_plugin.cpp
+#: editor/scene_tree_editor.cpp
+msgid "Instance:"
+msgstr "Instància:"
+
+#: editor/plugins/resource_preloader_editor_plugin.cpp
+#: editor/plugins/theme_editor_plugin.cpp editor/project_settings_editor.cpp
+#: editor/scene_tree_editor.cpp editor/script_editor_debugger.cpp
+msgid "Type:"
+msgstr "Tipus:"
+
+#: editor/plugins/resource_preloader_editor_plugin.cpp
 #: editor/plugins/sprite_frames_editor_plugin.cpp
 msgid "Load Resource"
 msgstr "Carrega un Recurs"
@@ -4823,10 +4827,6 @@ msgid "Toggle Comment"
 msgstr "Comentaris"
 
 #: editor/plugins/script_text_editor.cpp
-msgid "Clone Down"
-msgstr "Clona avall"
-
-#: editor/plugins/script_text_editor.cpp
 msgid "Fold/Unfold Line"
 msgstr "(Des)Plega la línia"
 
@@ -4837,6 +4837,10 @@ msgstr "Plega totes les  Línies"
 #: editor/plugins/script_text_editor.cpp
 msgid "Unfold All Lines"
 msgstr "Desplega totes les Línies"
+
+#: editor/plugins/script_text_editor.cpp
+msgid "Clone Down"
+msgstr "Clona avall"
 
 #: editor/plugins/script_text_editor.cpp
 msgid "Complete Symbol"
@@ -5682,11 +5686,6 @@ msgstr "Pestanya 2"
 msgid "Tab 3"
 msgstr "Pestanya 3"
 
-#: editor/plugins/theme_editor_plugin.cpp editor/project_settings_editor.cpp
-#: editor/scene_tree_editor.cpp editor/script_editor_debugger.cpp
-msgid "Type:"
-msgstr "Tipus:"
-
 #: editor/plugins/theme_editor_plugin.cpp
 msgid "Data Type:"
 msgstr "Tipus de Dades:"
@@ -5955,11 +5954,6 @@ msgid "Please choose an empty folder."
 msgstr "Selecciona un directori buit."
 
 #: editor/project_manager.cpp
-msgid "Please choose a folder that does not contain a 'project.godot' file."
-msgstr ""
-"Seleccioneu un directori que no contingui ja un fitxer 'project.godot'."
-
-#: editor/project_manager.cpp
 msgid "Imported Project"
 msgstr "Project importat"
 
@@ -5980,8 +5974,12 @@ msgid "Invalid project path (changed anything?)."
 msgstr "El Camí del Projecte no és vàlid (S'ha produit algun canvi?)."
 
 #: editor/project_manager.cpp
-msgid "Couldn't get project.godot in project path."
-msgstr "No s'ha trobat el fitxer 'project.godot' en el camí del Projecte."
+msgid ""
+"Couldn't load project.godot in project path (error %d). It may be missing or "
+"corrupted."
+msgstr ""
+"No es pot carregar el fitxer 'project.godot' en el camí del projecte (error "
+"%d). Pot ser que falti o que estigui malmès."
 
 #: editor/project_manager.cpp
 msgid "Couldn't edit project.godot in project path."
@@ -5998,10 +5996,6 @@ msgstr "Ha fracassat l'extracció del paquet dels següents fitxers:"
 #: editor/project_manager.cpp
 msgid "Rename Project"
 msgstr "Reanomena el Projecte"
-
-#: editor/project_manager.cpp
-msgid "Couldn't get project.godot in the project path."
-msgstr "No es pot trobat el el fitxer 'project.godot' en el camí del projecte."
 
 #: editor/project_manager.cpp
 msgid "New Game Project"
@@ -6706,10 +6700,6 @@ msgstr "Sub-Recursos"
 msgid "Clear Inheritance"
 msgstr "Elimina l'Herència"
 
-#: editor/scene_tree_dock.cpp editor/scene_tree_editor.cpp
-msgid "Open in Editor"
-msgstr "Obre en l'Editor"
-
 #: editor/scene_tree_dock.cpp
 msgid "Delete Node(s)"
 msgstr "Elimina els Nodes"
@@ -6825,10 +6815,6 @@ msgid ""
 msgstr ""
 "El Node està agrupat.\n"
 "Clic per mostrar el Tauler de Grups."
-
-#: editor/scene_tree_editor.cpp
-msgid "Instance:"
-msgstr "Instància:"
 
 #: editor/scene_tree_editor.cpp
 msgid "Open script"
@@ -7261,6 +7247,30 @@ msgid "Object can't provide a length."
 msgstr "L'objecte no pot proporcionar una longitud."
 
 #: modules/gridmap/grid_map_editor_plugin.cpp
+msgid "Next Plane"
+msgstr "Pla següent"
+
+#: modules/gridmap/grid_map_editor_plugin.cpp
+msgid "Previous Plane"
+msgstr "Pla anterior"
+
+#: modules/gridmap/grid_map_editor_plugin.cpp
+msgid "Plane:"
+msgstr "Pla:"
+
+#: modules/gridmap/grid_map_editor_plugin.cpp
+msgid "Next Floor"
+msgstr "Planta Següent"
+
+#: modules/gridmap/grid_map_editor_plugin.cpp
+msgid "Previous Floor"
+msgstr "Planta Anterior"
+
+#: modules/gridmap/grid_map_editor_plugin.cpp
+msgid "Floor:"
+msgstr "Planta:"
+
+#: modules/gridmap/grid_map_editor_plugin.cpp
 msgid "GridMap Delete Selection"
 msgstr "Elimina la Selecció del GridMap"
 
@@ -7269,24 +7279,12 @@ msgid "GridMap Duplicate Selection"
 msgstr "Duplica la Selecció del GridMap"
 
 #: modules/gridmap/grid_map_editor_plugin.cpp
-msgid "Floor:"
-msgstr "Planta:"
-
-#: modules/gridmap/grid_map_editor_plugin.cpp
 msgid "Grid Map"
 msgstr "Mapa de Graella"
 
 #: modules/gridmap/grid_map_editor_plugin.cpp
 msgid "Snap View"
 msgstr "Alinea la Vista"
-
-#: modules/gridmap/grid_map_editor_plugin.cpp
-msgid "Previous Floor"
-msgstr "Planta Anterior"
-
-#: modules/gridmap/grid_map_editor_plugin.cpp
-msgid "Next Floor"
-msgstr "Planta Següent"
 
 #: modules/gridmap/grid_map_editor_plugin.cpp
 msgid "Clip Disabled"
@@ -7393,6 +7391,10 @@ msgid "Mono"
 msgstr "Mono"
 
 #: modules/mono/editor/godotsharp_editor.cpp
+msgid "About C# support"
+msgstr "Sobre el suport de C#"
+
+#: modules/mono/editor/godotsharp_editor.cpp
 msgid "Create C# solution"
 msgstr "Crea una solució en C#"
 
@@ -7407,6 +7409,10 @@ msgstr "Munta el Projecte"
 #: modules/mono/editor/mono_bottom_panel.cpp
 msgid "Warnings"
 msgstr "Avisos"
+
+#: modules/mono/mono_gd/gd_mono_utils.cpp
+msgid "End of inner exception stack trace"
+msgstr ""
 
 #: modules/visual_script/visual_script.cpp
 msgid ""
@@ -7960,6 +7966,14 @@ msgid "ARVROrigin requires an ARVRCamera child node"
 msgstr "El node ARVROrigin requreix un node Fill del tipus ARVRCamera"
 
 #: scene/3d/baked_lightmap.cpp
+msgid "%d%%"
+msgstr "%d%%"
+
+#: scene/3d/baked_lightmap.cpp
+msgid "(Time Left: %d:%02d s)"
+msgstr "(Temps restant: %d:%02d s)"
+
+#: scene/3d/baked_lightmap.cpp
 msgid "Plotting Meshes: "
 msgstr "S'estàn traçant les Malles: "
 
@@ -8158,6 +8172,27 @@ msgstr "Error carregant lletra."
 #: scene/resources/dynamic_font.cpp
 msgid "Invalid font size."
 msgstr "La mida de la lletra no és vàlida."
+
+#~ msgid ""
+#~ "Invalid version.txt format inside templates. Revision is not a valid "
+#~ "identifier."
+#~ msgstr ""
+#~ "El format de version.txt dins les plantilles no és vàlid. \"Revision\" no "
+#~ "és un indentificador vàlid."
+
+#~ msgid "Can't write file."
+#~ msgstr "No es pot escriure el fitxer."
+
+#~ msgid "Please choose a folder that does not contain a 'project.godot' file."
+#~ msgstr ""
+#~ "Seleccioneu un directori que no contingui ja un fitxer 'project.godot'."
+
+#~ msgid "Couldn't get project.godot in project path."
+#~ msgstr "No s'ha trobat el fitxer 'project.godot' en el camí del Projecte."
+
+#~ msgid "Couldn't get project.godot in the project path."
+#~ msgstr ""
+#~ "No es pot trobat el el fitxer 'project.godot' en el camí del projecte."
 
 #~ msgid "Next"
 #~ msgstr "Següent"

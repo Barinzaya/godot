@@ -193,6 +193,12 @@ public:
 	}
 };
 
+void ScriptEditorDebugger::debug_copy() {
+	String msg = reason->get_text();
+	if (msg == "") return;
+	OS::get_singleton()->set_clipboard(msg);
+}
+
 void ScriptEditorDebugger::debug_next() {
 
 	ERR_FAIL_COND(!breaked);
@@ -338,6 +344,7 @@ void ScriptEditorDebugger::_parse_message(const String &p_msg, const Array &p_da
 		step->set_disabled(!can_continue);
 		next->set_disabled(!can_continue);
 		_set_reason_text(error, MESSAGE_ERROR);
+		copy->set_disabled(false);
 		breaked = true;
 		dobreak->set_disabled(true);
 		docontinue->set_disabled(false);
@@ -354,6 +361,7 @@ void ScriptEditorDebugger::_parse_message(const String &p_msg, const Array &p_da
 	} else if (p_msg == "debug_exit") {
 
 		breaked = false;
+		copy->set_disabled(true);
 		step->set_disabled(true);
 		next->set_disabled(true);
 		reason->set_text("");
@@ -939,6 +947,8 @@ void ScriptEditorDebugger::_notification(int p_what) {
 		case NOTIFICATION_ENTER_TREE: {
 
 			inspector->edit(variables);
+
+			copy->set_icon(get_icon("ActionCopy", "EditorIcons"));
 
 			step->set_icon(get_icon("DebugStep", "EditorIcons"));
 			next->set_icon(get_icon("DebugNext", "EditorIcons"));
@@ -1628,12 +1638,20 @@ void ScriptEditorDebugger::_error_selected(int p_idx) {
 		md.push_back(st[i + 1]);
 		md.push_back(st[i + 2]);
 
-		String str = func + " in " + script.get_file() + ":line " + itos(line);
+		String str = func;
+		String tooltip_str = TTR("Function:") + " " + func;
+		if (script.length() > 0) {
+			str += " in " + script.get_file();
+			tooltip_str = TTR("File:") + " " + script + "\n" + tooltip_str;
+			if (line > 0) {
+				str += ":line " + itos(line);
+				tooltip_str += "\n" + TTR("Line:") + " " + itos(line);
+			}
+		}
 
 		error_stack->add_item(str);
 		error_stack->set_item_metadata(error_stack->get_item_count() - 1, md);
-		error_stack->set_item_tooltip(error_stack->get_item_count() - 1,
-				TTR("File:") + " " + script + "\n" + TTR("Function:") + " " + func + "\n" + TTR("Line:") + " " + itos(line));
+		error_stack->set_item_tooltip(error_stack->get_item_count() - 1, tooltip_str);
 	}
 }
 
@@ -1716,7 +1734,7 @@ void ScriptEditorDebugger::_error_list_item_rmb_selected(int p_item, const Vecto
 	bool single_item_selected = error_list->get_selected_items().size() == 1;
 
 	if (single_item_selected) {
-		item_menu->add_icon_item(get_icon("CopyNodePath", "EditorIcons"), TTR("Copy Error"), ITEM_MENU_COPY_ERROR);
+		item_menu->add_icon_item(get_icon("ActionCopy", "EditorIcons"), TTR("Copy Error"), ITEM_MENU_COPY_ERROR);
 	}
 
 	if (item_menu->get_item_count() > 0) {
@@ -1741,6 +1759,9 @@ void ScriptEditorDebugger::_item_menu_id_pressed(int p_option) {
 void ScriptEditorDebugger::_bind_methods() {
 
 	ClassDB::bind_method(D_METHOD("_stack_dump_frame_selected"), &ScriptEditorDebugger::_stack_dump_frame_selected);
+
+	ClassDB::bind_method(D_METHOD("debug_copy"), &ScriptEditorDebugger::debug_copy);
+
 	ClassDB::bind_method(D_METHOD("debug_next"), &ScriptEditorDebugger::debug_next);
 	ClassDB::bind_method(D_METHOD("debug_step"), &ScriptEditorDebugger::debug_step);
 	ClassDB::bind_method(D_METHOD("debug_break"), &ScriptEditorDebugger::debug_break);
@@ -1816,6 +1837,13 @@ ScriptEditorDebugger::ScriptEditorDebugger(EditorNode *p_editor) {
 
 		hbc->add_child(memnew(VSeparator));
 
+		copy = memnew(ToolButton);
+		hbc->add_child(copy);
+		copy->set_tooltip(TTR("Copy Error"));
+		copy->connect("pressed", this, "debug_copy");
+
+		hbc->add_child(memnew(VSeparator));
+
 		step = memnew(ToolButton);
 		hbc->add_child(step);
 		step->set_tooltip(TTR("Step Into"));
@@ -1853,6 +1881,7 @@ ScriptEditorDebugger::ScriptEditorDebugger(EditorNode *p_editor) {
 		sc->set_v_size_flags(SIZE_EXPAND_FILL);
 
 		stack_dump = memnew(Tree);
+		stack_dump->set_allow_reselect(true);
 		stack_dump->set_columns(1);
 		stack_dump->set_column_titles_visible(true);
 		stack_dump->set_column_title(0, TTR("Stack Frames"));

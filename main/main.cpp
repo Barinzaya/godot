@@ -124,8 +124,16 @@ static bool editor = false;
 static bool show_help = false;
 static bool disable_render_loop = false;
 static int fixed_fps = -1;
+static bool auto_build_solutions = false;
+static bool auto_quit = false;
 
 static OS::ProcessID allow_focus_steal_pid = 0;
+
+static bool project_manager = false;
+
+bool Main::is_project_manager() {
+	return project_manager;
+}
 
 void initialize_physics() {
 
@@ -166,7 +174,7 @@ static String get_full_version_string() {
 	String hash = String(VERSION_HASH);
 	if (hash.length() != 0)
 		hash = "." + hash.left(7);
-	return String(VERSION_MKSTRING) + hash;
+	return String(VERSION_FULL_BUILD) + hash;
 }
 
 //#define DEBUG_INIT
@@ -197,6 +205,7 @@ void Main::print_help(const char *p_binary) {
 	OS::get_singleton()->print("  -e, --editor                     Start the editor instead of running the scene.\n");
 	OS::get_singleton()->print("  -p, --project-manager            Start the project manager, even if a project is auto-detected.\n");
 #endif
+	OS::get_singleton()->print("  -q, --quit                       Quit after the first iteration.\n");
 	OS::get_singleton()->print("  -l, --language <locale>          Use a specific locale (<locale> being a two-letter code).\n");
 	OS::get_singleton()->print("  --path <directory>               Path to a project (<directory> must contain a 'project.godot' file).\n");
 	OS::get_singleton()->print("  -u, --upwards                    Scan folders upwards for project.godot file.\n");
@@ -253,6 +262,7 @@ void Main::print_help(const char *p_binary) {
 	OS::get_singleton()->print("  --export-debug                   Use together with --export, enables debug mode for the template.\n");
 	OS::get_singleton()->print("  --doctool <path>                 Dump the engine API reference to the given <path> in XML format, merging if existing files are found.\n");
 	OS::get_singleton()->print("  --no-docbase                     Disallow dumping the base types (used with --doctool).\n");
+	OS::get_singleton()->print("  --build-solutions                Build the scripting solutions (e.g. for C# projects).\n");
 #ifdef DEBUG_METHODS_ENABLED
 	OS::get_singleton()->print("  --gdnative-generate-json-api     Generate JSON dump of the Godot API for GDNative bindings.\n");
 #endif
@@ -337,6 +347,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	Vector<String> breakpoints;
 	bool use_custom_res = true;
 	bool force_res = false;
+	bool found_project = false;
 
 	packed_data = PackedData::get_singleton();
 	if (!packed_data)
@@ -508,9 +519,17 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 			//video_mode.fullscreen=false;
 			init_fullscreen = true;
+#ifdef TOOLS_ENABLED
 		} else if (I->get() == "-e" || I->get() == "--editor") { // starts editor
 
 			editor = true;
+		} else if (I->get() == "-p" || I->get() == "--project-manager") { // starts project manager
+
+			project_manager = true;
+		} else if (I->get() == "--build-solutions") { // Build the scripting solution such C#
+
+			auto_build_solutions = true;
+#endif
 		} else if (I->get() == "--no-window") { // disable window creation, Windows only
 
 			OS::get_singleton()->set_no_window_mode(true);
@@ -536,6 +555,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			}
 		} else if (I->get() == "-u" || I->get() == "--upwards") { // scan folders upwards
 			upwards = true;
+		} else if (I->get() == "-q" || I->get() == "--quit") { // Auto quit at the end of the first main loop iteration
+			auto_quit = true;
 		} else if (I->get().ends_with("project.godot")) {
 			String path;
 			String file = I->get();
@@ -735,7 +756,9 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 #endif
 
-	if (globals->setup(game_path, main_pack, upwards) != OK) {
+	if (globals->setup(game_path, main_pack, upwards) == OK) {
+		found_project = true;
+	} else {
 
 #ifdef TOOLS_ENABLED
 		editor = false;
@@ -755,6 +778,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		OS::get_singleton()->add_logger(memnew(RotatedFileLogger(base_path, max_files)));
 	}
 
+#ifdef TOOLS_ENABLED
 	if (editor) {
 		Engine::get_singleton()->set_editor_hint(true);
 		main_args.push_back("--editor");
@@ -762,6 +786,26 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			init_maximized = true;
 			video_mode.maximized = true;
 		}
+	}
+
+	if (!project_manager) {
+		// Determine if the project manager should be requested
+		project_manager = main_args.size() == 0 && !found_project;
+	}
+#endif
+
+	if (main_args.size() == 0 && String(GLOBAL_DEF("application/run/main_scene", "")) == "") {
+#ifdef TOOLS_ENABLED
+		if (!editor && !project_manager) {
+#endif
+			OS::get_singleton()->print("Error: Can't run project: no main scene defined.\n");
+			goto error;
+#ifdef TOOLS_ENABLED
+		}
+#endif
+	}
+
+	if (editor || project_manager) {
 		use_custom_res = false;
 	}
 
@@ -779,8 +823,18 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 #ifdef TOOLS_ENABLED
 
-	if (main_args.size() == 0 && (!ProjectSettings::get_singleton()->has_setting("application/run/main_loop_type")) && (!ProjectSettings::get_singleton()->has_setting("application/run/main_scene") || String(ProjectSettings::get_singleton()->get("application/run/main_scene")) == ""))
+	if (!project_manager) {
+		// Determine if the project manager should be requested
+		project_manager =
+				main_args.size() == 0 &&
+				!ProjectSettings::get_singleton()->has_setting("application/run/main_loop_type") &&
+				(!ProjectSettings::get_singleton()->has_setting("application/run/main_scene") ||
+						String(ProjectSettings::get_singleton()->get("application/run/main_scene")) == "");
+	}
+
+	if (project_manager) {
 		use_custom_res = false; //project manager (run without arguments)
+	}
 
 #endif
 
@@ -830,9 +884,11 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	GLOBAL_DEF("rendering/quality/intended_usage/framebuffer_allocation", 2);
 	GLOBAL_DEF("rendering/quality/intended_usage/framebuffer_allocation.mobile", 3);
 
-	if (editor) {
-		OS::get_singleton()->_allow_hidpi = true; //editors always in hidpi
+	if (editor || project_manager) {
+		// The editor and project manager always detect and use hiDPI if needed
+		OS::get_singleton()->_allow_hidpi = true;
 	}
+
 	Engine::get_singleton()->_pixel_snap = GLOBAL_DEF("rendering/quality/2d/use_pixel_snap", false);
 	OS::get_singleton()->_keep_screen_on = GLOBAL_DEF("display/window/energy_saving/keep_screen_on", true);
 	if (rtm == -1) {
@@ -1185,31 +1241,33 @@ bool Main::start() {
 	String test;
 	String _export_preset;
 	bool export_debug = false;
-	bool project_manager_request = false;
 
 	List<String> args = OS::get_singleton()->get_cmdline_args();
 	for (int i = 0; i < args.size(); i++) {
 		//parameters that do not have an argument to the right
 		if (args[i] == "--no-docbase") {
 			doc_base = false;
+#ifdef TOOLS_ENABLED
 		} else if (args[i] == "-e" || args[i] == "--editor") {
 			editor = true;
 		} else if (args[i] == "-p" || args[i] == "--project-manager") {
-			project_manager_request = true;
+			project_manager = true;
+#endif
 		} else if (args[i].length() && args[i][0] != '-' && game_path == "") {
 			game_path = args[i];
 		}
 		//parameters that have an argument to the right
 		else if (i < (args.size() - 1)) {
 			bool parsed_pair = true;
-			if (args[i] == "--doctool") {
-				doc_tool = args[i + 1];
-				for (int j = i + 2; j < args.size(); j++)
-					removal_docs.push_back(args[j]);
-			} else if (args[i] == "-s" || args[i] == "--script") {
+			if (args[i] == "-s" || args[i] == "--script") {
 				script = args[i + 1];
 			} else if (args[i] == "--test") {
 				test = args[i + 1];
+#ifdef TOOLS_ENABLED
+			} else if (args[i] == "--doctool") {
+				doc_tool = args[i + 1];
+				for (int j = i + 2; j < args.size(); j++)
+					removal_docs.push_back(args[j]);
 			} else if (args[i] == "--export") {
 				editor = true; //needs editor
 				if (i + 1 < args.size()) {
@@ -1227,6 +1285,7 @@ bool Main::start() {
 					return false;
 				}
 				export_debug = true;
+#endif
 			} else {
 				// The parameter does not match anything known, don't skip the next argument
 				parsed_pair = false;
@@ -1473,7 +1532,7 @@ bool Main::start() {
 		}
 
 		String local_game_path;
-		if (game_path != "" && !project_manager_request) {
+		if (game_path != "" && !project_manager) {
 
 			local_game_path = game_path.replace("\\", "/");
 
@@ -1518,7 +1577,7 @@ bool Main::start() {
 #endif
 		}
 
-		if (!project_manager_request && !editor) {
+		if (!project_manager && !editor) {
 			if (game_path != "" || script != "") {
 				//autoload
 				List<PropertyInfo> props;
@@ -1626,7 +1685,7 @@ bool Main::start() {
 		}
 
 #ifdef TOOLS_ENABLED
-		if (project_manager_request || (script == "" && test == "" && game_path == "" && !editor)) {
+		if (project_manager || (script == "" && test == "" && game_path == "" && !editor)) {
 
 			ProjectManager *pmanager = memnew(ProjectManager);
 			ProgressDialog *progress_dialog = memnew(ProgressDialog);
@@ -1810,7 +1869,16 @@ bool Main::iteration() {
 		target_ticks = MIN(MAX(target_ticks, current_ticks - time_step), current_ticks + time_step);
 	}
 
-	return exit;
+#ifdef TOOLS_ENABLED
+	if (auto_build_solutions) {
+		auto_build_solutions = false;
+		if (!EditorNode::get_singleton()->call_build()) {
+			ERR_FAIL_V(true);
+		}
+	}
+#endif
+
+	return exit || auto_quit;
 }
 
 void Main::force_redraw() {

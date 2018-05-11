@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="OS" inherits="Object" category="Core" version="3.0-stable">
+<class name="OS" inherits="Object" category="Core" version="3.0.2">
 	<brief_description>
 		Operating System functions.
 	</brief_description>
@@ -34,6 +34,12 @@
 			</return>
 			<description>
 				Returns [code]true[/code] if the current host platform is using multiple threads.
+			</description>
+		</method>
+		<method name="center_window">
+			<return type="void">
+			</return>
+			<description>
 			</description>
 		</method>
 		<method name="delay_msec" qualifiers="const">
@@ -232,6 +238,12 @@
 				Returns the number of cores available in the host machine.
 			</description>
 		</method>
+		<method name="get_real_window_size" qualifiers="const">
+			<return type="Vector2">
+			</return>
+			<description>
+			</description>
+		</method>
 		<method name="get_scancode_string" qualifiers="const">
 			<return type="String">
 			</return>
@@ -372,6 +384,10 @@
 			</return>
 			<description>
 				Returns the absolute directory path where user data is written ([code]user://[/code]).
+				On Linux, this is [code]~/.local/share/godot/app_userdata/[project_name][/code], or [code]~/.local/share/[custom_name][/code] if [code]use_custom_user_dir[/code] is set.
+				On macOS, this is [code]~/Library/Application Support/Godot/app_userdata/[project_name][/code], or [code]~/Library/Application Support/[custom_name][/code] if [code]use_custom_user_dir[/code] is set.
+				On Windows, this is [code]%APPDATA%/Godot/app_userdata/[project_name][/code], or [code]%APPDATA%/[custom_name][/code] if [code]use_custom_user_dir[/code] is set.
+				If the project name is empty, [code]user://[/code] falls back to [code]res://[/code].
 			</description>
 		</method>
 		<method name="get_virtual_keyboard_height">

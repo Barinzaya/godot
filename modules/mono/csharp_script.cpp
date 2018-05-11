@@ -176,7 +176,7 @@ void CSharpLanguage::get_reserved_words(List<String> *p_words) const {
 		"fixed",
 		"float",
 		"for",
-		"forech",
+		"foreach",
 		"goto",
 		"if",
 		"implicit",
@@ -222,14 +222,17 @@ void CSharpLanguage::get_reserved_words(List<String> *p_words) const {
 		"ushort",
 		"using",
 		"virtual",
-		"volatile",
 		"void",
+		"volatile",
 		"while",
 
 		// Contextual keywords. Not reserved words, but I guess we should include
 		// them because this seems to be used only for syntax highlighting.
 		"add",
+		"alias",
 		"ascending",
+		"async",
+		"await",
 		"by",
 		"descending",
 		"dynamic",
@@ -238,10 +241,10 @@ void CSharpLanguage::get_reserved_words(List<String> *p_words) const {
 		"get",
 		"global",
 		"group",
-		"in",
 		"into",
 		"join",
 		"let",
+		"nameof",
 		"on",
 		"orderby",
 		"partial",
@@ -250,6 +253,7 @@ void CSharpLanguage::get_reserved_words(List<String> *p_words) const {
 		"set",
 		"value",
 		"var",
+		"when",
 		"where",
 		"yield",
 		0
@@ -450,7 +454,7 @@ Vector<ScriptLanguage::StackInfo> CSharpLanguage::debug_get_current_stack_info()
 #ifdef DEBUG_ENABLED
 	// Printing an error here will result in endless recursion, so we must be careful
 
-	if (!gdmono->is_runtime_initialized() || !GDMono::get_singleton()->get_api_assembly() || !GDMonoUtils::mono_cache.corlib_cache_updated)
+	if (!gdmono->is_runtime_initialized() || !GDMono::get_singleton()->get_core_api_assembly() || !GDMonoUtils::mono_cache.corlib_cache_updated)
 		return Vector<StackInfo>();
 
 	MonoObject *stack_trace = mono_object_new(mono_domain_get(), CACHED_CLASS(System_Diagnostics_StackTrace)->get_mono_ptr());
@@ -717,8 +721,10 @@ void CSharpLanguage::reload_assemblies_if_needed(bool p_soft_reload) {
 	for (Map<Ref<CSharpScript>, Map<ObjectID, List<Pair<StringName, Variant> > > >::Element *E = to_reload.front(); E; E = E->next()) {
 
 		Ref<CSharpScript> scr = E->key();
+		scr->signals_invalidated = true;
 		scr->exports_invalidated = true;
 		scr->reload(p_soft_reload);
+		scr->update_signals();
 		scr->update_exports();
 
 		//restore state if saved
@@ -751,8 +757,10 @@ void CSharpLanguage::reload_assemblies_if_needed(bool p_soft_reload) {
 		//if instance states were saved, set them!
 	}
 
-	if (Engine::get_singleton()->is_editor_hint())
+	if (Engine::get_singleton()->is_editor_hint()) {
 		EditorNode::get_singleton()->get_property_editor()->update_tree();
+		NodeDock::singleton->update_lists();
+	}
 }
 #endif
 
@@ -947,19 +955,6 @@ void CSharpLanguage::free_instance_binding_data(void *p_data) {
 #endif
 }
 
-void CSharpInstance::_ml_call_reversed(MonoObject *p_mono_object, GDMonoClass *p_klass, const StringName &p_method, const Variant **p_args, int p_argcount) {
-
-	GDMonoClass *base = p_klass->get_parent_class();
-	if (base && base != script->native)
-		_ml_call_reversed(p_mono_object, base, p_method, p_args, p_argcount);
-
-	GDMonoMethod *method = p_klass->get_method(p_method, p_argcount);
-
-	if (method) {
-		method->invoke(p_mono_object, p_args);
-	}
-}
-
 CSharpInstance *CSharpInstance::create_for_managed_type(Object *p_owner, CSharpScript *p_script, const Ref<MonoGCHandle> &p_gchandle) {
 
 	CSharpInstance *instance = memnew(CSharpInstance);
@@ -1028,6 +1023,8 @@ bool CSharpInstance::set(const StringName &p_name, const Variant &p_value) {
 
 			if (ret && GDMonoMarshal::unbox<MonoBoolean>(ret) == true)
 				return true;
+
+			break;
 		}
 
 		top = top->get_parent_class();
@@ -1088,6 +1085,8 @@ bool CSharpInstance::get(const StringName &p_name, Variant &r_ret) const {
 				r_ret = GDMonoMarshal::mono_object_to_variant(ret);
 				return true;
 			}
+
+			break;
 		}
 
 		top = top->get_parent_class();
@@ -1190,8 +1189,10 @@ void CSharpInstance::_call_multilevel(MonoObject *p_mono_object, const StringNam
 	while (top && top != script->native) {
 		GDMonoMethod *method = top->get_method(p_method, p_argcount);
 
-		if (method)
+		if (method) {
 			method->invoke(p_mono_object, p_args);
+			return;
+		}
 
 		top = top->get_parent_class();
 	}
@@ -1199,13 +1200,9 @@ void CSharpInstance::_call_multilevel(MonoObject *p_mono_object, const StringNam
 
 void CSharpInstance::call_multilevel_reversed(const StringName &p_method, const Variant **p_args, int p_argcount) {
 
-	if (script.is_valid()) {
-		MonoObject *mono_object = get_mono_object();
+	// Sorry, the method is the one that controls the call order
 
-		ERR_FAIL_NULL(mono_object);
-
-		_ml_call_reversed(mono_object, script->script_class, p_method, p_args, p_argcount);
-	}
+	call_multilevel(p_method, p_args, p_argcount);
 }
 
 void CSharpInstance::_reference_owner_unsafe() {
@@ -1552,6 +1549,74 @@ bool CSharpScript::_update_exports() {
 	return false;
 }
 
+bool CSharpScript::_update_signals() {
+	if (!valid)
+		return false;
+
+	bool changed = false;
+
+	if (signals_invalidated) {
+		signals_invalidated = false;
+
+		GDMonoClass *top = script_class;
+
+		_signals.clear();
+		changed = true; // TODO Do a real check for change
+
+		while (top && top != native) {
+			const Vector<GDMonoClass *> &delegates = top->get_all_delegates();
+			for (int i = delegates.size() - 1; i >= 0; --i) {
+				Vector<Argument> parameters;
+
+				GDMonoClass *delegate = delegates[i];
+
+				if (_get_signal(top, delegate, parameters)) {
+					_signals[delegate->get_name()] = parameters;
+				}
+			}
+
+			top = top->get_parent_class();
+		}
+	}
+
+	return changed;
+}
+
+bool CSharpScript::_get_signal(GDMonoClass *p_class, GDMonoClass *p_delegate, Vector<Argument> &params) {
+	if (p_delegate->has_attribute(CACHED_CLASS(SignalAttribute))) {
+		MonoType *raw_type = GDMonoClass::get_raw_type(p_delegate);
+
+		if (mono_type_get_type(raw_type) == MONO_TYPE_CLASS) {
+			// Arguments are accessibles as arguments of .Invoke method
+			GDMonoMethod *invoke = p_delegate->get_method("Invoke", -1);
+
+			Vector<StringName> names;
+			Vector<ManagedType> types;
+			invoke->get_parameter_names(names);
+			invoke->get_parameter_types(types);
+
+			if (names.size() == types.size()) {
+				for (int i = 0; i < names.size(); ++i) {
+					Argument arg;
+					arg.name = names[i];
+					arg.type = GDMonoMarshal::managed_to_variant_type(types[i]);
+
+					if (arg.type == Variant::NIL) {
+						ERR_PRINTS("Unknown type of signal parameter: " + arg.name + " in " + p_class->get_full_name());
+						return false;
+					}
+
+					params.push_back(arg);
+				}
+
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 #ifdef TOOLS_ENABLED
 bool CSharpScript::_get_member_export(GDMonoClass *p_class, GDMonoClassMember *p_member, PropertyInfo &r_prop_info, bool &r_exported) {
 
@@ -1873,11 +1938,14 @@ ScriptInstance *CSharpScript::instance_create(Object *p_this) {
 		PlaceHolderScriptInstance *si = memnew(PlaceHolderScriptInstance(CSharpLanguage::get_singleton(), Ref<Script>(this), p_this));
 		placeholders.insert(si);
 		_update_exports();
+		_update_signals();
 		return si;
 #else
 		return NULL;
 #endif
 	}
+
+	update_signals();
 
 	if (native) {
 		String native_name = native->get_name();
@@ -2042,6 +2110,31 @@ void CSharpScript::update_exports() {
 #endif
 }
 
+bool CSharpScript::has_script_signal(const StringName &p_signal) const {
+	if (_signals.has(p_signal))
+		return true;
+
+	return false;
+}
+
+void CSharpScript::get_script_signal_list(List<MethodInfo> *r_signals) const {
+	for (const Map<StringName, Vector<Argument> >::Element *E = _signals.front(); E; E = E->next()) {
+		MethodInfo mi;
+
+		mi.name = E->key();
+		for (int i = 0; i < E->get().size(); i++) {
+			PropertyInfo arg;
+			arg.name = E->get()[i].name;
+			mi.arguments.push_back(arg);
+		}
+		r_signals->push_back(mi);
+	}
+}
+
+void CSharpScript::update_signals() {
+	_update_signals();
+}
+
 Ref<Script> CSharpScript::get_base_script() const {
 
 	// TODO search in metadata file once we have it, not important any way?
@@ -2106,6 +2199,7 @@ CSharpScript::CSharpScript() :
 #ifdef TOOLS_ENABLED
 	source_changed_cache = false;
 	exports_invalidated = true;
+	signals_invalidated = true;
 #endif
 
 	_resource_path_changed();

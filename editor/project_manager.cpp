@@ -304,8 +304,9 @@ private:
 
 			ProjectSettings *current = memnew(ProjectSettings);
 
-			if (current->setup(dir, "")) {
-				set_message(TTR("Couldn't get project.godot in project path."), MESSAGE_ERROR);
+			int err = current->setup(dir, "");
+			if (err != OK) {
+				set_message(vformat(TTR("Couldn't load project.godot in project path (error %d). It may be missing or corrupted."), err), MESSAGE_ERROR);
 			} else {
 				ProjectSettings::CustomMap edited_settings;
 				edited_settings["application/config/name"] = project_name->get_text();
@@ -530,8 +531,9 @@ public:
 
 			ProjectSettings *current = memnew(ProjectSettings);
 
-			if (current->setup(project_path->get_text(), "")) {
-				set_message(TTR("Couldn't get project.godot in the project path."), MESSAGE_ERROR);
+			int err = current->setup(project_path->get_text(), "");
+			if (err != OK) {
+				set_message(vformat(TTR("Couldn't load project.godot in project path (error %d). It may be missing or corrupted."), err), MESSAGE_ERROR);
 				status_rect->show();
 				msg->show();
 				get_ok()->set_disabled(true);
@@ -1539,7 +1541,7 @@ ProjectManager::ProjectManager() {
 	String hash = String(VERSION_HASH);
 	if (hash.length() != 0)
 		hash = "." + hash.left(7);
-	l->set_text("v" VERSION_MKSTRING "" + hash);
+	l->set_text("v" VERSION_FULL_BUILD "" + hash);
 	l->set_align(Label::ALIGN_CENTER);
 	top_hb->add_child(l);
 

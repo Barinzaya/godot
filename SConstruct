@@ -161,11 +161,11 @@ opts.Add(BoolVariable('xml', "XML format support for resources", True))
 
 # Advanced options
 opts.Add(BoolVariable('disable_3d', "Disable 3D nodes for smaller executable", False))
-opts.Add(BoolVariable('disable_advanced_gui', "Disable advance 3D gui nodes and behaviors", False))
+opts.Add(BoolVariable('disable_advanced_gui', "Disable advanced 3D gui nodes and behaviors", False))
 opts.Add('extra_suffix', "Custom extra suffix added to the base filename of all generated binary files", '')
 opts.Add('unix_global_settings_path', "UNIX-specific path to system-wide settings. Currently only used for templates", '')
 opts.Add(BoolVariable('verbose', "Enable verbose output for the compilation", False))
-opts.Add(BoolVariable('vsproj', "Generate Visual Studio Project.", False))
+opts.Add(BoolVariable('vsproj', "Generate Visual Studio Project", False))
 opts.Add(EnumVariable('warnings', "Set the level of warnings emitted during compilation", 'no', ('extra', 'all', 'moderate', 'no')))
 opts.Add(BoolVariable('progress', "Show a progress indicator during build", True))
 opts.Add(BoolVariable('dev', "If yes, alias for verbose=yes warnings=all", False))
@@ -445,7 +445,7 @@ if selected_platform in platform_list:
     if not env['verbose']:
         methods.no_verbose(sys, env)
 
-    if (True): # FIXME: detect GLES3
+    if (not env["platform"] == "server"): # FIXME: detect GLES3
         env.Append( BUILDERS = { 'GLES3_GLSL' : env.Builder(action = methods.build_gles3_headers, suffix = 'glsl.gen.h',src_suffix = '.glsl') } )
 
     scons_cache_path = os.environ.get("SCONS_CACHE")
@@ -498,7 +498,6 @@ screen = sys.stdout
 node_count = 0
 node_count_max = 0
 node_count_interval = 1
-node_pruning = 8 # Number of nodes to process before prunning the cache
 if ('env' in locals()):
     node_count_fname = str(env.Dir('#')) + '/.scons_node_count'
 # Progress reporting is not available in non-TTY environments since it
@@ -513,17 +512,15 @@ import time, math
 class cache_progress:
     # The default is 1 GB cache and 12 hours half life
     def __init__(self, path = None, limit = 1073741824, half_life = 43200):
-        global node_pruning
         self.path = path
         self.limit = limit
         self.exponent_scale = math.log(2) / half_life
         if env['verbose'] and path != None:
             screen.write('Current cache limit is ' + self.convert_size(limit) + ' (used: ' + self.convert_size(self.get_size(path)) + ')\n')
-        self.pruning = node_pruning
         self.delete(self.file_list())
 
     def __call__(self, node, *args, **kw):
-        global node_count, node_count_max, node_count_interval, node_count_fname, node_pruning, show_progress
+        global node_count, node_count_max, node_count_interval, node_count_fname, show_progress
         if show_progress:
             # Print the progress percentage
             node_count += node_count_interval
@@ -536,11 +533,6 @@ class cache_progress:
             else:
                 screen.write('\r[Initial build] ')
                 screen.flush()
-        # Prune if the number of nodes processed is 'node_pruning' or bigger
-        self.pruning -= node_count_interval
-        if self.pruning <= 0:
-            self.pruning = node_pruning
-            self.delete(self.file_list())
 
     def delete(self, files):
         if len(files) == 0:
@@ -548,7 +540,7 @@ class cache_progress:
         if env['verbose']:
             # Utter something
             screen.write('\rPurging %d %s from cache...\n' % (len(files), len(files) > 1 and 'files' or 'file'))
-        map(os.remove, files)
+        [os.remove(f) for f in files]
 
     def file_list(self):
         if self.path == None:
